@@ -52,6 +52,12 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
         comments = ""
         commentline = "# %s changed from %s to %s.\n".__mod__
         commandline = "    C.user_preferences.%s = %s\n".__mod__
+        A_addons = set(A['addons'])
+        Z_addons = set(Z['addons'])
+        addons = Z_addons - A_addons
+        del A['addons']
+        del Z['addons']
+
         for k in A:
             before,after = A[k],Z[k]
             if before != after:
@@ -65,7 +71,12 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
                 comments,
                 'def register():',
                 '    C = bpy.context',
-                commands
+                commands,
+                '    addons = %s'%repr(addons),
+                '    try:',
+                '        list(map(lambda _:bpy.ops.wm.addon_enable(module=_),filter(lambda _:_ not in C.user_preferences.addons,addons)))',
+                '    except:',
+                '        pass'
                 ])
         with open(fname,'w') as outputfile:
             outputfile.write(flines)
@@ -87,7 +98,8 @@ class BPREFS_OT_baseline_load(bpy.types.Operator):
         cname = self.configuration.rpartition(".")[0]
         syspath = sys.path.copy()
         sys.path.append(baseline_lib_funcs.baseline_data_storage)
-        __import__(cname).register()
+        modl = __import__(cname)
+        modl.register()
         sys.path = syspath
         return {"FINISHED"}
 

@@ -24,6 +24,7 @@ def propdict(prop):
     d = dict()
     for k,v in iterprops(prop):
         d[".".join(k)] = str(v)
+    d['addons'] = [addon.module for addon in prop.addons]
     return d
 
 def propjson(prop):
