@@ -2,10 +2,10 @@ bl_info = {
         "name": "UserPrefsBaseline",
         "description":"Save and load named sets of preferences.",
         "author":"dustractor@gmail.com",
-        "version":(0,9),
+        "version":(1,1),
         "blender":(2,65,0),
-        "location":"This Location, when enabled.",
-        "warning":"Color-properties, enabled addons, and selected theme are not taken into consideration.",
+        "location":"UserPreferences View > This Location",
+        "warning":"",
         "wiki_url":"",
         "category": "System"
     }
@@ -19,8 +19,9 @@ import datetime
 
 from . import baseline_lib_funcs
 
+
 class BPREFS_OT_baseline_calibrate(bpy.types.Operator):
-    bl_idname = "bprefs.create_baseline_file"
+    bl_idname = "baseline.create_baseline_file"
     bl_label = "Create Baseline File"
     bl_description = "Represents prefs at default state. Calculate this data per each updated version of blender."
     bl_options = {"INTERNAL"}
@@ -37,8 +38,42 @@ class BPREFS_OT_baseline_calibrate(bpy.types.Operator):
         context.area.tag_redraw()
         return {"FINISHED"}
 
+class BPREFS_OT_preview_config(bpy.types.Operator):
+    bl_idname = "baseline.preview_configuration"
+    bl_label = "preview_configuration"
+    bl_options = {"INTERNAL"}
+    configuration = bpy.props.StringProperty(default="")
+    display = bpy.props.StringProperty(default="")
+    def draw(self,context):
+        layout = self.layout
+        for ln in json.loads(self.display):
+            label = ln.lstrip().rstrip()
+            if len(label) > 1:
+                layout.label(label,icon="FILE_TICK")
+
+
+
+    def invoke(self,context,event):
+        if not self.configuration:
+            return {"CANCELLED"}
+
+        cfile = os.path.join(baseline_lib_funcs.baseline_data_storage,self.configuration)
+        if not os.path.isfile(cfile):
+            return {"CANCELLED"}
+        self.display = json.dumps(list(filter(lambda ln:ln.lstrip().startswith("#"),open(cfile,'r').readlines())))
+        
+
+        context.window_manager.invoke_props_dialog(self,width=800,height=1000)
+        return {"RUNNING_MODAL"}
+
+    def execute(self,context):
+        print("self.configuration:",self.configuration)
+
+
+        return {"FINISHED"}
+
 class BPREFS_OT_baseline_set(bpy.types.Operator):
-    bl_idname = "bprefs.create_configuration_file"
+    bl_idname = "baseline.create_configuration_file"
     bl_label = "Output Current Configuration"
     bl_description = "Write changed preferences to file."
     bl_options = {"INTERNAL"}
@@ -73,6 +108,7 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
                 '    C = bpy.context',
                 commands,
                 '    addons = %s'%repr(addons),
+                "\n".join(['    #[Addon %s enabled.]'% adnm for adnm in addons]),
                 '    try:',
                 '        list(map(lambda _:bpy.ops.wm.addon_enable(module=_),filter(lambda _:_ not in C.user_preferences.addons,addons)))',
                 '    except:',
@@ -103,6 +139,7 @@ class BPREFS_OT_baseline_load(bpy.types.Operator):
         sys.path = syspath
         return {"FINISHED"}
 
+
 class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
     bl_idname = __package__
     prop = bpy.props.StringProperty(default="prop")
@@ -111,11 +148,11 @@ class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
         box = layout.box()
         if not os.path.isfile(baseline_lib_funcs.baseline_file):
             box.label("A %s baseline file has not been created yet."%(str(bpy.app.version)))
-            box.operator("bprefs.create_baseline_file")
+            box.operator("baseline.create_baseline_file")
         else:
             box.label("Baseline file for %s located at:"%str(bpy.app.version))
             box.label(baseline_lib_funcs.baseline_file)
-            box.operator("bprefs.create_baseline_file",text="Recalibrate baseline")
+            box.operator("baseline.create_baseline_file",text="Recalibrate baseline")
         layout.separator()
         box = layout.box()
         for cf in os.listdir(baseline_lib_funcs.baseline_data_storage):
@@ -123,8 +160,9 @@ class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
                 continue
             row = box.row()
             row.label(cf)
+            row.operator('baseline.preview_configuration').configuration = cf
             row.operator('baseline.load_configuration',text="Load %s"%cf.rpartition(".")[0]).configuration = cf
-        layout.operator("bprefs.create_configuration_file")
+        layout.operator("baseline.create_configuration_file")
 
 
 def register():
