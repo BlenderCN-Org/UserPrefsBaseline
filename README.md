@@ -1,6 +1,8 @@
 UserPrefsBaseline
 ---
 
+
+
 ---
 
 [here is a usage video](http://youtu.be/U6LjZCpkM28)
@@ -13,7 +15,6 @@ Basic Usage:
 1.  Enable the addon and expand its display.
 2.  Click "Create Baseline" ( You will only need to do this once. )
 3.  With some some preference settings having been changed, click "Output Current Configuration".  Settings that are different from their default value are written to a file.  
-<<<<<<< HEAD
 4.  Now you can load those settings when you like, by clicking the associated button, or by using the Baseline:Configs Menu, which is located on Blender's File Menu.
 
 
@@ -24,6 +25,3 @@ Tips for better usage:
 *  Preference sets are saved as a pair of files:  one for the settings and the addons, and one for the hotkeys.   They can be found in the scripts/datafiles folder.
 
 
-=======
-4.  Now you can load those settings when you like, by clicking the associated button.
->>>>>>> FETCH_HEAD
