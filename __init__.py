@@ -2,7 +2,7 @@ bl_info = {
         "name": "UserPrefsBaseline",
         "description":"Save and load named sets of preferences.",
         "author":"dustractor@gmail.com",
-        "version":(1,1),
+        "version":(1,2),
         "blender":(2,65,0),
         "location":"UserPreferences View > This Location",
         "warning":"",
@@ -92,6 +92,9 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
         addons = Z_addons - A_addons
         del A['addons']
         del Z['addons']
+        fname = os.path.join(baseline_lib_funcs.baseline_data_storage,self.name + ".py")
+        kcf = os.path.join(baseline_lib_funcs.baseline_keys_storage,self.name + "_keys.py")
+        bpy.ops.wm.keyconfig_export(filepath=kcf)
 
         for k in A:
             before,after = A[k],Z[k]
@@ -99,10 +102,10 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
                 comments += commentline((k,before,after))
                 commands += commandline((k,after))
         comments += "\n"
-        fname = os.path.join(baseline_lib_funcs.baseline_data_storage,self.name+".py")
         flines = "\n".join([
                 '# File created on %s and labeled %s.' %(datetime.datetime.now().ctime(),self.name),
                 'import bpy',
+                'import os',
                 comments,
                 'def register():',
                 '    C = bpy.context',
@@ -112,7 +115,10 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
                 '    try:',
                 '        list(map(lambda _:bpy.ops.wm.addon_enable(module=_),filter(lambda _:_ not in C.user_preferences.addons,addons)))',
                 '    except:',
-                '        pass'
+                '        pass',
+                '    kcf = "%s"' % kcf,
+                '    if os.path.isfile(kcf):',
+                '        bpy.ops.wm.keyconfig_import(filepath=kcf)'
                 ])
         with open(fname,'w') as outputfile:
             outputfile.write(flines)
@@ -165,8 +171,22 @@ class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
         layout.operator("baseline.create_configuration_file")
 
 
+class BPREFS_MT_menu(bpy.types.Menu):
+    bl_idname = "BPREFS_MT_menu"
+    bl_label = "Baseline:Configs"
+    def draw(self,context):
+        layout = self.layout
+        layout.label("Load:",icon="PLUGIN")
+        for cf in filter(lambda _:_.endswith(".py"),os.listdir(baseline_lib_funcs.baseline_data_storage)):
+            layout.operator('baseline.load_configuration',text="Load %s"%cf.rpartition(".")[0]).configuration = cf
+        layout.separator()
+        layout.label("Preview:",icon="QUESTION")
+        for cf in filter(lambda _:_.endswith(".py"),os.listdir(baseline_lib_funcs.baseline_data_storage)):
+            layout.operator('baseline.preview_configuration',text="Preview %s"%cf.rpartition(".")[0]).configuration = cf
+
 def register():
     bpy.utils.register_module(__name__)
+    bpy.types.INFO_MT_file.append(lambda *_:_[0].layout.menu('BPREFS_MT_menu'))
 
 def unregister():
     bpy.utils.unregister_module(__name__)

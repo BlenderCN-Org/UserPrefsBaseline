@@ -5,6 +5,7 @@ import uuid
 
 baseline_file = bpy.utils.user_resource("DATAFILES","Baseline.json")
 baseline_data_storage = bpy.utils.user_resource("DATAFILES","UserPrefsBaseline",create=True)
+baseline_keys_storage = bpy.utils.user_resource("DATAFILES","UserPrefsBaselineHotKeys",create=True)
 
 
 def ignore(x):
