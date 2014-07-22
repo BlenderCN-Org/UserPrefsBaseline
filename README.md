@@ -3,7 +3,7 @@ UserPrefsBaseline
 
 ---
 
-[here is a usage video](http://youtu.be/rw9rxtgWiHo)
+[here is a usage video](http://youtu.be/U6LjZCpkM28)
 
 ---
 
