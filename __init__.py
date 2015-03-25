@@ -2,7 +2,7 @@ bl_info = {
         "name": "UserPrefsBaseline",
         "description":"Save and load named sets of preferences.",
         "author":"dustractor@gmail.com",
-        "version":(1,2),
+        "version":(1,3),
         "blender":(2,65,0),
         "location":"UserPreferences View > This Location",
         "warning":"",
@@ -61,8 +61,6 @@ class BPREFS_OT_preview_config(bpy.types.Operator):
         if not os.path.isfile(cfile):
             return {"CANCELLED"}
         self.display = json.dumps(list(filter(lambda ln:ln.lstrip().startswith("#"),open(cfile,'r').readlines())))
-        
-
         context.window_manager.invoke_props_dialog(self,width=800,height=1000)
         return {"RUNNING_MODAL"}
 
@@ -86,7 +84,7 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
         commands = ""
         comments = ""
         commentline = "# %s changed from %s to %s.\n".__mod__
-        commandline = "    C.user_preferences.%s = %s\n".__mod__
+        commandline = "    bpy.context.user_preferences.%s = %s\n".__mod__
         A_addons = set(A['addons'])
         Z_addons = set(Z['addons'])
         addons = Z_addons - A_addons
@@ -108,17 +106,17 @@ class BPREFS_OT_baseline_set(bpy.types.Operator):
                 'import os',
                 comments,
                 'def register():',
-                '    C = bpy.context',
                 commands,
                 '    addons = %s'%repr(addons),
                 "\n".join(['    #[Addon %s enabled.]'% adnm for adnm in addons]),
                 '    try:',
-                '        list(map(lambda _:bpy.ops.wm.addon_enable(module=_),filter(lambda _:_ not in C.user_preferences.addons,addons)))',
+                '        list(map(lambda _:bpy.ops.wm.addon_enable(module=_),filter(lambda _:_ not in bpy.context.user_preferences.addons,addons)))',
                 '    except:',
                 '        pass',
                 '    kcf = "%s"' % kcf,
-                '    if os.path.isfile(kcf):',
-                '        bpy.ops.wm.keyconfig_import(filepath=kcf)'
+                '    and_sigh_the_keys = bpy.context.user_preferences.addons["%s"].preferences.and_the_keys' % __package__,
+                '    if os.path.isfile(kcf) and and_sigh_the_keys:',
+                '        bpy.ops.wm.keyconfig_import(filepath=kcf,keep_original=False)'
                 ])
         with open(fname,'w') as outputfile:
             outputfile.write(flines)
@@ -149,6 +147,7 @@ class BPREFS_OT_baseline_load(bpy.types.Operator):
 class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
     bl_idname = __package__
     prop = bpy.props.StringProperty(default="prop")
+    and_the_keys = bpy.props.BoolProperty(default=False)#and it will stay that way...
     def draw(self,context):
         layout = self.layout
         box = layout.box()
@@ -169,6 +168,9 @@ class UserPrefsBaselineAddon(bpy.types.AddonPreferences):
             row.operator('baseline.preview_configuration').configuration = cf
             row.operator('baseline.load_configuration',text="Load %s"%cf.rpartition(".")[0]).configuration = cf
         layout.operator("baseline.create_configuration_file")
+        layout.separator()
+        layout.prop(self,'and_the_keys')
+        layout.label("Check this if you also want to load the associated hotkeys.")
 
 
 class BPREFS_MT_menu(bpy.types.Menu):
