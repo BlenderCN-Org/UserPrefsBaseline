@@ -16,6 +16,7 @@ Basic Usage:
 2.  Click "Create Baseline" ( You will only need to do this once. )
 3.  With some some preference settings having been changed, click "Output Current Configuration".  Settings that are different from their default value are written to a file.  
 4.  Now you can load those settings when you like, by clicking the associated button, or by using the Baseline:Configs Menu, which is located on Blender's File Menu.
+5.  If the box marked "and_the_keys" is checked, associated hotkeys will also be loaded with the config, if any.
 
 
 Tips for better usage:
